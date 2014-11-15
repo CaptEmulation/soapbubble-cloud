@@ -1,161 +1,174 @@
 var ES5Class = require('es5class');
 var _ = require('underscore');
 var Schema = require('mongoose').Schema;
-
-var Morpheus = exports.Morpheus = ES5Class.$define('Morpheus', {
-  construct: function () {
-    Schema.apply(this, arguments);
-  }
-});
+var util = require('util');
 
 
-var Cast = exports.Cast = Morpheus.$define('Cast', {
-  construct: function ($super, meta) {
-    $super(_({
-      castId: { type: Number, default: -1 }
-    }).extend(meta || {}));
-  }
-});
+var Morpheus = function () {
+  Schema.apply(this, arguments);
+};
 
-var ControlledMovieCast = exports.ControlledMovieCast = Cast.$define('ControlledMovieCast', {
-  construct: function ($super, meta) {
-    $super(_({
-      posX: { type: Number, default: -1 },
-      posY: { type: Number, default: -1 },
-      companionMovieCastId: { type: Number, default: -1 },
-      scale: { type: Number, default: -1.0 },
-      controlledMovieCallbacks: [ {
-        frames: { type: Number, default: -1 },
-        direction: { type: Number, default: 0 },
-        callbackWhen: { type: Number, default: -1 },
-        gameState: { type: Number, default: -1  }
-      } ]
-    }).extend(meta || {}));
-  }
-});
+util.inherits(Morpheus, Schema);
 
-var GameState = exports.GameState = Morpheus.$define('GameState', {
-  construct: function ($super, meta) {
-    $super(_({
-      stateId: { type: Number, default: -1 },
-      initialValue: { type: Number, default: -1 },
-      minValue: { type: Number, default: -1 },
-      maxValue: { type: Number, default: -1 },
-      stateWraps: { type: Number, default: -1 },
+var Cast = function () {
+  Morpheus.apply(this, arguments);
+  this.add({
+    castId:{ type: Number, default: -1 }
+  });
+}
+
+util.inherits(Cast, Morpheus);
+
+var ControlledMovieCast = function () {
+  Cast.apply(this, arguments);
+  this.add({
+    posX: { type: Number, default: -1 },
+    posY: { type: Number, default: -1 },
+    companionMovieCastId: { type: Number, default: -1 },
+    scale: { type: Number, default: -1.0 },
+    controlledMovieCallbacks: [ {
+      frames: { type: Number, default: -1 },
+      direction: { type: Number, default: 0 },
+      callbackWhen: { type: Number, default: -1 },
+      gameState: { type: Number, default: -1  }
+    } ]
+  });
+}
+
+util.inherits(ControlledMovieCast, Cast);
+
+var GameState = function () {
+  Morpheus.apply(this, arguments);
+  this.add({
+    stateId: { type: Number, default: -1 },
+    initialValue: { type: Number, default: -1 },
+    minValue: { type: Number, default: -1 },
+    maxValue: { type: Number, default: -1 },
+    stateWraps: { type: Number, default: -1 },
+    value: { type: Number, default: -1 }
+  });
+}
+
+util.inherits(GameState, Morpheus);
+
+var HotSpot = function () {
+  Cast.apply(this, arguments);
+  this.add({
+    comparators: [ {
+      gameStateId: { type: Number, default: -1 },
+      testType: { type: Number, default: -1 },
       value: { type: Number, default: -1 }
-    }).extend(meta || {}));
-  }
-});
+    }],
+    castId: { type: Number, default: -1 },
+    rectTop: { type: Number, default: -1 },
+    rectBottom: { type: Number, default: -1 },
+    rectLeft: { type: Number, default: -1 },
+    rectRight: { type: Number, default: -1 },
+    cursorShapeWhenActive: { type: Number, default: -1 },
+    param1: { type: Number, default: -1 },
+    param2: { type: Number, default: -1 },
+    param3: { type: Number, default: -1 },
+    type: { type: Number, default: -1 },
+    gesture: { type: Number, default: -1 },
+    defaultPass: { type: Boolean, default: false }
+  });
+}
 
-var HotSpot = exports.HotSpot = Cast.$define('HotSpot', {
-  construct: function ($super, meta) {
-    $super(_({
-      comparators: [ {
-        gameStateId: { type: Number, default: -1 },
-        testType: { type: Number, default: -1 },
-        value: { type: Number, default: -1 }
-      }],
-      castId: { type: Number, default: -1 },
-      rectTop: { type: Number, default: -1 },
-      rectBottom: { type: Number, default: -1 },
-      rectLeft: { type: Number, default: -1 },
-      rectRight: { type: Number, default: -1 },
-      cursorShapeWhenActive: { type: Number, default: -1 },
-      param1: { type: Number, default: -1 },
-      param2: { type: Number, default: -1 },
-      param3: { type: Number, default: -1 },
-      type: { type: Number, default: -1 },
-      gesture: { type: Number, default: -1 },
-      defaultPass: { type: Boolean, default: false }
-    }).extend(meta || {}));
-  }
-});
+util.inherits(HotSpot, Cast);
 
-var MovieCast = exports.MovieCast = Cast.$define('MovieCast', {
-  construct: function ($super, meta) {
-    $super(_({
-      fileName: { type: String, default: '' }
-    }).extend(meta || {}));
-  }
-});
+var MovieCast = function () {
+  Cast.apply(this, arguments);
+  this.add({
+    fileName: { type: String, default: '' }
+  });
+}
 
-var PanoAnim = exports.PanoAnim = MovieCast.$define('PanoAnim', {
-  construct: function ($super, meta) {
-    $super(_({
-      "locX": { type: Number, default: -1 },
-      "locY": { type: Number, default: -1 },
-      "frame": { type: Number, default: -1 },
-      "looping": { type: Boolean, default: true }
-    }).extend(meta || {}));
-  }
-});
+util.inherits(MovieCast, Cast);
 
-var MovieSpecialCast = exports.MovieSpecialCast = MovieCast.$define('MovieSpecialCast', {
-  construct: function ($super, meta) {
-    $super(_({
-      "locX": { type: Number, default: -1 },
-      "locY": { type: Number, default: -1 },
-      "startFrame": { type: Number, default: -1 },
-      "endFrame": { type: Number, default: -1 },
-      "actionEnd": { type: Number, default: -1 },
-      "scale": { type: Number, default: -1.0 },
-      "looping": { type: Boolean, default: true },
-      "dissolveToNextScene": { type: Boolean, default: true },
-      "nextSceneId": { type: Number, default: -1 },
-    }).extend(meta || {}));
-  }
-});
+var PanoAnim = function () {
+  MovieCast.apply(this, arguments);
+  this.add({
+    "locX": { type: Number, default: -1 },
+    "locY": { type: Number, default: -1 },
+    "frame": { type: Number, default: -1 },
+    "looping": { type: Boolean, default: true }
+  })
+}
 
-var PanoCast = exports.PanoCast = MovieCast.$define('PanoCast');
+util.inherits(PanoAnim, MovieCast);
 
-var PreloadCast = exports.PreloadCast = MovieCast.$define('PreloadCast');
+var MovieSpecialCast = function () {
+  MovieCast.apply(this, arguments);
+  this.add({
+    "locX": { type: Number, default: -1 },
+    "locY": { type: Number, default: -1 },
+    "startFrame": { type: Number, default: -1 },
+    "endFrame": { type: Number, default: -1 },
+    "actionEnd": { type: Number, default: -1 },
+    "scale": { type: Number, default: -1.0 },
+    "looping": { type: Boolean, default: true },
+    "dissolveToNextScene": { type: Boolean, default: true },
+    "nextSceneId": { type: Number, default: -1 },
+  });
+}
 
-var SoundCast = exports.PreloadCast = MovieCast.$define('SoundCast');
+util.inherits(MovieSpecialCast, MovieCast);
 
-var Scene = exports.Scene = Morpheus.$define('Scene', {
-  construct: function ($super, meta) {
-    $super(_({
-      sceneId: { type: Number, default: -1 },
-      cdFlags: { type: Number, default: -1 },
-      sceneType: { type: Number, default: -1 },
-      palette: { type: Number, default: -1 },
-      casts: [ Schema.Types.ObjectId ]
-    }).extend(meta || {}));
-  }
-});
+var isA = function (Class) {
+  var C = function () {
+    Class.apply(this, arguments);
+  };
+  
+  util.inherits(C, Class);
+  
+  return C;
+}
 
-exports.classes = [];
+var PanoCast = isA(MovieCast);
+
+var PreloadCast = isA(MovieCast);
+
+var SoundCast = isA(MovieCast);
+
+var Scene = function () {
+  Morpheus.apply(this, arguments);
+  this.add({
+    sceneId: { type: Number, default: -1 },
+    cdFlags: { type: Number, default: -1 },
+    sceneType: { type: Number, default: -1 },
+    palette: { type: Number, default: -1 },
+    casts: [ Schema.Types.ObjectId ]
+  });
+};
+
+util.inherits(Scene, Morpheus);
+
+exports.classes = {};
 
 exports.install = function (db, installed) {
-  var apply = function (Class) {
-    if (typeof installed === 'function') installed(Class.$className);
-    exports.classes.push({
-      className: Class.$className,
-      Class: db.model(Class.$className, Class.$create())
-    });
+  var apply = function (name, Class) {
+    if (typeof installed === 'function') installed(name);
+    exports.classes[name] = db.model(name, new Class());
   }
-  apply(Cast);
-  apply(ControlledMovieCast);
-  apply(GameState);
-  apply(HotSpot);
-  apply(MovieCast);
-  apply(MovieSpecialCast);
-  apply(PanoAnim);
-  apply(PanoCast);
-  apply(PreloadCast);
-  apply(SoundCast);
-  apply(Scene);
+  apply('Cast', Cast);
+  apply('ControlledMovieCast', ControlledMovieCast);
+  apply('GameState', GameState);
+  apply('HotSpot', HotSpot);
+  apply('MovieCast', MovieCast);
+  apply('MovieSpecialCast', MovieSpecialCast);
+  apply('PanoAnim', PanoAnim);
+  apply('PanoCast', PanoCast);
+  apply('PreloadCast', PreloadCast);
+  apply('SoundCast', SoundCast);
+  apply('Scene', Scene);
 };
 
 exports.get = function (className) {
   if (typeof className === 'undefined') {
-    return _(exports.classes).pluck('Class');
+    return _(exports.classes).values();
   }
   
-  var found = _(exports.classes).where({ className: className });
-  if (found.length) {
-    return found[0].Class;
-  }
+  return exports.classes[className];
 }
 
 exports.create = function (description) {
