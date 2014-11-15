@@ -13,7 +13,7 @@ util.inherits(Morpheus, Schema);
 var Cast = function () {
   Morpheus.apply(this, arguments);
   this.add({
-    castId:{ type: Number, default: -1 }
+    castId: Number
   });
 }
 
@@ -22,15 +22,17 @@ util.inherits(Cast, Morpheus);
 var ControlledMovieCast = function () {
   Cast.apply(this, arguments);
   this.add({
-    posX: { type: Number, default: -1 },
-    posY: { type: Number, default: -1 },
-    companionMovieCastId: { type: Number, default: -1 },
-    scale: { type: Number, default: -1.0 },
+    controlledLocation: {
+      "x": Number,
+      "y": Number
+    },
+    companionMovieCastId: Number,
+    scale: Number,
     controlledMovieCallbacks: [ {
-      frames: { type: Number, default: -1 },
-      direction: { type: Number, default: 0 },
-      callbackWhen: { type: Number, default: -1 },
-      gameState: { type: Number, default: -1  }
+      frames: Number,
+      direction: Number,
+      callbackWhen: Number,
+      gameState: Number
     } ]
   });
 }
@@ -40,12 +42,12 @@ util.inherits(ControlledMovieCast, Cast);
 var GameState = function () {
   Morpheus.apply(this, arguments);
   this.add({
-    stateId: { type: Number, default: -1 },
-    initialValue: { type: Number, default: -1 },
-    minValue: { type: Number, default: -1 },
-    maxValue: { type: Number, default: -1 },
-    stateWraps: { type: Number, default: -1 },
-    value: { type: Number, default: -1 }
+    stateId: Number,
+    initialValue: Number,
+    minValue: Number,
+    maxValue: Number,
+    stateWraps: Number,
+    value: Number
   });
 }
 
@@ -55,22 +57,22 @@ var HotSpot = function () {
   Cast.apply(this, arguments);
   this.add({
     comparators: [ {
-      gameStateId: { type: Number, default: -1 },
-      testType: { type: Number, default: -1 },
-      value: { type: Number, default: -1 }
+      gameStateId: Number,
+      testType: Number,
+      value: Number
     }],
-    castId: { type: Number, default: -1 },
-    rectTop: { type: Number, default: -1 },
-    rectBottom: { type: Number, default: -1 },
-    rectLeft: { type: Number, default: -1 },
-    rectRight: { type: Number, default: -1 },
-    cursorShapeWhenActive: { type: Number, default: -1 },
-    param1: { type: Number, default: -1 },
-    param2: { type: Number, default: -1 },
-    param3: { type: Number, default: -1 },
-    type: { type: Number, default: -1 },
-    gesture: { type: Number, default: -1 },
-    defaultPass: { type: Boolean, default: false }
+    castId: Number,
+    rectTop: Number,
+    rectBottom: Number,
+    rectLeft: Number,
+    rectRight: Number,
+    cursorShapeWhenActive: Number,
+    param1: Number,
+    param2: Number,
+    param3: Number,
+    type: Number,
+    gesture: Number,
+    defaultPass: Boolean
   });
 }
 
@@ -79,7 +81,7 @@ util.inherits(HotSpot, Cast);
 var MovieCast = function () {
   Cast.apply(this, arguments);
   this.add({
-    fileName: { type: String, default: '' }
+    fileName: String
   });
 }
 
@@ -88,10 +90,12 @@ util.inherits(MovieCast, Cast);
 var PanoAnim = function () {
   MovieCast.apply(this, arguments);
   this.add({
-    "locX": { type: Number, default: -1 },
-    "locY": { type: Number, default: -1 },
-    "frame": { type: Number, default: -1 },
-    "looping": { type: Boolean, default: true }
+    location: {
+      "x": Number,
+      "y": Number
+    },
+    "frame": Number,
+    "looping": Boolean
   })
 }
 
@@ -100,15 +104,17 @@ util.inherits(PanoAnim, MovieCast);
 var MovieSpecialCast = function () {
   MovieCast.apply(this, arguments);
   this.add({
-    "locX": { type: Number, default: -1 },
-    "locY": { type: Number, default: -1 },
-    "startFrame": { type: Number, default: -1 },
-    "endFrame": { type: Number, default: -1 },
-    "actionEnd": { type: Number, default: -1 },
-    "scale": { type: Number, default: -1.0 },
-    "looping": { type: Boolean, default: true },
-    "dissolveToNextScene": { type: Boolean, default: true },
-    "nextSceneId": { type: Number, default: -1 },
+    location: {
+      "x": Number,
+      "y": Number
+    },
+    "startFrame": Number,
+    "endFrame": Number,
+    "actionEnd": Number,
+    "scale": Number,
+    "looping": Boolean,
+    "dissolveToNextScene": Boolean,
+    "nextSceneId": Number,
   });
 }
 
@@ -133,11 +139,11 @@ var SoundCast = isA(MovieCast);
 var Scene = function () {
   Morpheus.apply(this, arguments);
   this.add({
-    sceneId: { type: Number, default: -1 },
-    cdFlags: { type: Number, default: -1 },
-    sceneType: { type: Number, default: -1 },
-    palette: { type: Number, default: -1 },
-    casts: [ Schema.Types.ObjectId ]
+    sceneId: Number,
+    cdFlags: Number,
+    sceneType: Number,
+    palette: Number,
+    casts: [ Schema.Types.Mixed ]
   });
 };
 
@@ -147,19 +153,23 @@ exports.classes = {};
 
 exports.install = function (db, installed) {
   var apply = function (name, Class) {
-    if (typeof installed === 'function') installed(name);
-    exports.classes[name] = db.model(name, new Class());
+    return (exports.classes[name] = db.model(name, new Class()));
   }
-  apply('Cast', Cast);
-  apply('ControlledMovieCast', ControlledMovieCast);
+  var discriminate = function (Parent, name, Class) {
+    return (exports.classes[name] = Parent.discriminator(name, new Class()));
+  }
+  
+  var cast = apply('Cast', Cast);
+  discriminate(cast, 'ControlledMovieCast', ControlledMovieCast);
+  discriminate(cast, 'HotSpot', HotSpot);
+  discriminate(cast, 'MovieCast', MovieCast);
+  discriminate(cast, 'MovieSpecialCast', MovieSpecialCast);
+  discriminate(cast, 'PanoAnim', PanoAnim);
+  discriminate(cast, 'PanoCast', PanoCast);
+  discriminate(cast, 'PreloadCast', PreloadCast);
+  discriminate(cast, 'SoundCast', SoundCast);
+  
   apply('GameState', GameState);
-  apply('HotSpot', HotSpot);
-  apply('MovieCast', MovieCast);
-  apply('MovieSpecialCast', MovieSpecialCast);
-  apply('PanoAnim', PanoAnim);
-  apply('PanoCast', PanoCast);
-  apply('PreloadCast', PreloadCast);
-  apply('SoundCast', SoundCast);
   apply('Scene', Scene);
 };
 

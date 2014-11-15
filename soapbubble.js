@@ -185,4 +185,111 @@ exe.addModule({
   }
 });
 
+exe.addModule((function () {
+  var AWS = require('aws-sdk');
+  var config = require('./config');
+  var fs = require('fs');
+
+  AWS.config.loadFromPath('./credentials.json');
+  var s3 = new AWS.S3();   
+
+  return {
+    handles: 'upload',
+    execute: function (context) {
+      var options = Options.for(context);
+      var basePath = options.default('basePath', '.');
+      var connections = options.default('connections', 4);
+      var force = options.default('force', false);
+      var chunk = 2 ^ options.default('chunk', 16);
+      
+      var putAsset = function (cast) {
+        var defer = Q.defer();
+        var fileName = cast.fileName;
+        var asset = basePath + '/' + fileName;
+        
+        var fileStream = fs.createReadStream(asset);
+        
+        fileStream.on('error', function (err) {
+          defer.reject(err);
+        });
+        
+        var s3Send = function () {
+          logger.info(sprintf('Sending %s to %s', fileName, config.amazon.Bucket));
+          
+          Q.ninvoke(s3, 'putObject', {
+            Bucket: config.amazon.Bucket,
+            Key: fileName,
+            Body: fileStream
+          })
+            .then(function () {
+              logger.debug(sprintf('Finished sending %s', fileName));
+              defer.resolve();
+            })
+            .fail(function (err) {
+              defer.reject(err);
+            });
+        }
+        
+        fileStream.on('open', function () {
+          if (force) {
+            s3Send();
+          } else {
+            Q.ninvoke(s3, 'headObject', {
+              Bucket: config.amazon.Bucket,
+              Key: fileName
+            }).then(function (metadata) {
+              logger.info(sprintf('Object %s exists', fileName));
+              defer.resolve();
+            })
+            .fail(function (err) {
+              if (err && err.code === 'Not Found') {
+                s3Send();
+              }
+            });
+          }
+          
+        });
+        
+        logger.debug(sprintf('Loading from disk %s', asset));
+        
+        return defer.promise;
+      }
+      
+      var createConnection = function (casts, castIndex) {
+        return putAsset(casts[castIndex]).fail(function (err) {
+          logger.error(err);
+        });
+      }
+      
+      logger.debug('Finding all assets');
+      dbSession().then(function (db) {
+        Q(morpheus.get('Cast').find({
+          fileName: { $exists: true }
+        }).exec())
+          .then(function (casts) {
+            logger.debug(sprintf('Found %s assets', casts.length));
+            var conCount = 0, castIndex = 0, promises = [];
+            
+            for (var i = 0; i <= connections - 1; i++) {
+              conCount++;
+              promises.push(createConnection(casts, i).then((function () {
+                var handler = function () {
+                  conCount--;
+                  i++;
+                  if (i <= casts.length) {
+                    return createConnection(casts, i).then(handler);
+                  }
+                }
+                
+                return handler;
+              }())));
+            }
+            
+            return closeDbSession(Q.allSettled(promises))
+          });
+      });
+    }
+  }
+}()));
+
 exe.execute();
