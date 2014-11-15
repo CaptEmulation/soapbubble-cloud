@@ -1,0 +1,6 @@
+node_modules
+/config.js
+.nodemonignore
+morpheus.map.json
+credentials.json
+*.log
